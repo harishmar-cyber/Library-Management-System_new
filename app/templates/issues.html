@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Issue & Return Management{% endblock %}
+{% block page_title %}Issue & Return Circulation{% endblock %}
+{% block page_subtitle %}Track book loans, automatic overdue fine calculations, and queue triggers{% endblock %}
+
+{% block content %}
+<!-- Filter & Action Bar -->
+<div class="card" style="margin-bottom: 24px;">
+  <div class="card-body" style="padding: 18px 24px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+      
+      <!-- Filter Tabs -->
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <a href="{{ url_for('issues.index', status='all') }}" class="btn btn-sm {% if status_filter == 'all' %}btn-primary{% else %}btn-outline{% endif %}">
+          All Records
+        </a>
+        <a href="{{ url_for('issues.index', status='issued') }}" class="btn btn-sm {% if status_filter == 'issued' %}btn-primary{% else %}btn-outline{% endif %}">
+          Active Loans
+        </a>
+        <a href="{{ url_for('issues.index', status='overdue') }}" class="btn btn-sm {% if status_filter == 'overdue' %}btn-primary{% else %}btn-outline{% endif %}">
+          Overdue
+        </a>
+        <a href="{{ url_for('issues.index', status='returned') }}" class="btn btn-sm {% if status_filter == 'returned' %}btn-primary{% else %}btn-outline{% endif %}">
+          Returned
+        </a>
+      </div>
+
+      <!-- Search & Issue Button -->
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <form method="GET" action="{{ url_for('issues.index') }}" style="display: flex; gap: 6px;">
+          <input type="hidden" name="status" value="{{ status_filter }}">
+          <input type="text" name="q" class="form-control" style="width: 220px;" placeholder="Search title, student..." value="{{ search_q }}">
+          <button type="submit" class="btn btn-outline btn-sm">Search</button>
+        </form>
+        <button type="button" class="btn btn-primary" data-modal-open="issueBookModal">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="9 11 12 14 22 4"></polyline>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+          </svg>
+          <span>Issue Book</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Circulation Records Table -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+        <line x1="16" y1="2" x2="16" y2="6"></line>
+        <line x1="8" y1="2" x2="8" y2="6"></line>
+        <line x1="3" y1="10" x2="21" y2="10"></line>
+      </svg>
+      <span>Circulation Ledger ({{ issues|length }})</span>
+    </div>
+    <div class="card-subtitle">Enforces loan duration limits and auto-updates reservation queues</div>
+  </div>
+
+  <div class="card-body" style="padding: 0;">
+    <div class="table-container" style="border: none; border-radius: 0;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Loan ID</th>
+            <th>Book Information</th>
+            <th>Borrower Student</th>
+            <th>Issue Date</th>
+            <th>Due Date</th>
+            <th>Return Date</th>
+            <th>Status / Fine</th>
+            <th style="text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for issue in issues %}
+          <tr>
+            <td style="font-weight: 700; color: var(--color-primary);">#LN-{{ issue.issue_id }}</td>
+            <td>
+              <div style="font-weight: 600; color: var(--text-main);">{{ issue.book_title }}</div>
+              <small class="code-pill">{{ issue.isbn }}</small>
+            </td>
+            <td>
+              <div style="font-weight: 600;">{{ issue.student_name }}</div>
+              <small style="color:var(--text-muted);">{{ issue.student_number }}</small>
+            </td>
+            <td>{{ issue.issue_date }}</td>
+            <td><strong>{{ issue.due_date }}</strong></td>
+            <td>{{ issue.return_date or '—' }}</td>
+            <td>
+              {% if issue.status == 'overdue' %}
+                <span class="badge badge-danger">Overdue (${{ "%.2f"|format(issue.fine_amount) }})</span>
+              {% elif issue.status == 'returned' %}
+                <span class="badge badge-success">Returned</span>
+              {% else %}
+                <span class="badge badge-info">Active Loan</span>
+              {% endif %}
+            </td>
+            <td style="text-align: right; white-space: nowrap;">
+              {% if issue.status != 'returned' %}
+                <form method="POST" action="{{ url_for('issues.return_book', issue_id=issue.issue_id) }}" style="display:inline-block;" onsubmit="return confirm('Process return for \'{{ issue.book_title }}\'?');">
+                  <button type="submit" class="btn btn-success btn-sm">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span>Return</span>
+                  </button>
+                </form>
+              {% else %}
+                <span style="font-size: 12px; color: var(--text-muted);">Settled</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 36px;">No circulation records found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Issue Book Modal -->
+<div class="modal-overlay" id="issueBookModal">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <div class="modal-title">Issue Book to Student</div>
+      <button type="button" class="modal-close" data-modal-close>&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('issues.issue_book') }}">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Select Available Book *</label>
+          <select name="book_id" class="form-control" required>
+            <option value="">-- Choose Book from In-Stock Catalog --</option>
+            {% for b in available_books %}
+              <option value="{{ b.book_id }}">{{ b.title }} ({{ b.available_copies }} in stock, ISBN: {{ b.isbn }})</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Select Enrolled Student *</label>
+          <select name="student_id" class="form-control" required>
+            <option value="">-- Choose Registered Borrower --</option>
+            {% for s in students %}
+              <option value="{{ s.student_id }}">{{ s.full_name }} ({{ s.student_number }})</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Loan Duration (Days)</label>
+          <input type="number" name="loan_days" class="form-control" value="14" min="1" max="60" required>
+          <small style="color:var(--text-muted); font-size:11.5px;">Standard period: 14 days. Late fee applies at $1.00/day afterwards.</small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-primary">Authorize & Issue</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

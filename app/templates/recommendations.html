@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block title %}Book Recommendation Graph{% endblock %}
+{% block page_title %}Recommendation Graph & Traversal{% endblock %}
+{% block page_subtitle %}Explore book relational networks using Adjacency Lists, BFS, and DFS traversals{% endblock %}
+
+{% block content %}
+<!-- Graph Controls Ribbon -->
+<div class="card" style="margin-bottom: 24px;">
+  <div class="card-body" style="padding: 18px 24px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+      
+      <!-- Root Book Selection -->
+      <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 280px;">
+        <label class="form-label" style="margin-bottom: 0; white-space: nowrap;">Root Book:</label>
+        <select id="graphBookSelect" class="form-control" style="max-width: 380px;">
+          {% for b in books %}
+            <option value="{{ b.book_id }}" {% if b.book_id == selected_id %}selected{% endif %}>
+              #{{ b.book_id }} - {{ b.title }} ({{ b.category }})
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Traversal Action Buttons -->
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <button type="button" class="btn btn-primary" id="btnRunBFS">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="8" y1="6" x2="21" y2="6"></line>
+            <line x1="8" y1="12" x2="21" y2="12"></line>
+            <line x1="8" y1="18" x2="21" y2="18"></line>
+          </svg>
+          <span>Run BFS (Queue)</span>
+          <span class="dsa-badge" style="background:#ffffff; color:var(--color-primary); padding:1px 6px; font-size:10px;">Level-by-Level</span>
+        </button>
+
+        <button type="button" class="btn btn-secondary" id="btnRunDFS">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+          </svg>
+          <span>Run DFS (Stack)</span>
+          <span class="dsa-badge" style="background:#e0d6fa; color:#543793; padding:1px 6px; font-size:10px;">Deep Branch</span>
+        </button>
+
+        <button type="button" class="btn btn-outline" id="btnResetGraph">
+          Reset View
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Graph Canvas and Live Traversal Terminal -->
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 28px;">
+  
+  <!-- Interactive Canvas -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="18" cy="5" r="3"></circle>
+          <circle cx="6" cy="12" r="3"></circle>
+          <circle cx="18" cy="19" r="3"></circle>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+        </svg>
+        <span>Relational Adjacency Graph Canvas</span>
+      </div>
+      <div style="font-size: 12px; color: var(--text-muted);">
+        <span class="code-pill">{{ total_nodes }} Vertices</span> &bull; <span class="code-pill">{{ total_edges }} Weighted Edges</span>
+      </div>
+    </div>
+    <div class="card-body" style="padding: 0; position: relative;">
+      <canvas id="graphCanvas" style="width: 100%; height: 460px; display: block; background: #ffffff;"></canvas>
+      <div style="position: absolute; bottom: 12px; left: 16px; font-size: 11px; color: var(--text-muted); background: rgba(255,255,255,0.85); padding: 4px 8px; border-radius: 4px;">
+        Tip: Drag nodes to rearrange &bull; Click to set root
+      </div>
+    </div>
+  </div>
+
+  <!-- Traversal Log Terminal -->
+  <div class="card" style="display: flex; flex-direction: column;">
+    <div class="card-header">
+      <div class="card-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="4 17 10 11 4 5"></polyline>
+          <line x1="12" y1="19" x2="20" y2="19"></line>
+        </svg>
+        <span>Traversal Execution Trace</span>
+      </div>
+      <span class="dsa-badge">Live Step Engine</span>
+    </div>
+    <div class="card-body" id="traversalLog" style="flex: 1; height: 460px; overflow-y: auto; padding: 14px;">
+      <div style="text-align: center; color: var(--text-muted); padding: 40px 10px; font-size: 13px;">
+        Select an algorithm above (BFS or DFS) to observe queue/stack operations and traversal paths in real-time.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Algorithmic Book Recommendations Section -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+        </svg>
+        <span>Graph-Powered Recommendations for: <em>{{ selected_book.title if selected_book else 'Selected Title' }}</em></span>
+      </div>
+      <div class="card-subtitle">Calculated via multi-hop path proximity and relation edge weights</div>
+    </div>
+  </div>
+
+  <div class="card-body" style="padding: 24px;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px;" id="recommendationsGrid">
+      {% for rec in recommendations %}
+      <div class="card" style="border: 1px solid var(--border-color); background: var(--bg-surface); padding: 16px; border-radius: var(--radius-md);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+          <span class="badge badge-lavender">{{ rec.category }}</span>
+          <span class="dsa-badge" style="background:#ecfdf5; color:var(--color-success); border-color:#a7f3d0;">
+            Score: {{ rec.score }}
+          </span>
+        </div>
+        <h4 style="font-size: 14.5px; font-weight: 700; color: var(--text-main); margin-bottom: 4px;">{{ rec.title }}</h4>
+        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">by {{ rec.author }}</div>
+        
+        <div style="padding-top: 10px; border-top: 1px dashed var(--border-light); font-size: 11.5px; color: var(--text-secondary);">
+          <strong>Relation:</strong> {{ rec.relation_reason }}
+        </div>
+      </div>
+      {% else %}
+      <div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 24px;">
+        No connected recommendations found for this book node.
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/graph_vis.js') }}"></script>
+<script>
+  let graphVis;
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    graphVis = new InteractiveGraphVis('graphCanvas', 'traversalLog');
+
+    // Fetch initial graph data
+    try {
+      const data = await apiRequest('/api/recommendations/graph-data');
+      graphVis.setData(data);
+
+      const initialBookId = document.getElementById('graphBookSelect').value;
+      if (initialBookId) {
+        const node = graphVis.nodeMap.get(parseInt(initialBookId));
+        if (node) {
+          graphVis.selectedNode = node;
+          graphVis.draw();
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+    // Book dropdown change
+    document.getElementById('graphBookSelect').addEventListener('change', (e) => {
+      const bId = e.target.value;
+      window.location.href = `/recommendations?book_id=${bId}`;
+    });
+
+    // Run BFS
+    document.getElementById('btnRunBFS').addEventListener('click', async () => {
+      const bookId = document.getElementById('graphBookSelect').value;
+      if (!bookId) return;
+
+      const res = await apiRequest(`/api/recommendations/bfs?book_id=${bookId}&depth=3`);
+      if (res && res.steps) {
+        graphVis.animateTraversal(res, 'BFS');
+      }
+    });
+
+    // Run DFS
+    document.getElementById('btnRunDFS').addEventListener('click', async () => {
+      const bookId = document.getElementById('graphBookSelect').value;
+      if (!bookId) return;
+
+      const res = await apiRequest(`/api/recommendations/dfs?book_id=${bookId}&depth=3`);
+      if (res && res.steps) {
+        graphVis.animateTraversal(res, 'DFS');
+      }
+    });
+
+    // Reset Graph
+    document.getElementById('btnResetGraph').addEventListener('click', () => {
+      graphVis.resetStates();
+      document.getElementById('traversalLog').innerHTML = `
+        <div style="text-align: center; color: var(--text-muted); padding: 40px 10px; font-size: 13px;">
+          Canvas view reset. Click BFS or DFS to begin animated traversal.
+        </div>
+      `;
+    });
+  });
+</script>
+{% endblock %}

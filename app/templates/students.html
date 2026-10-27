@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}Student Directory{% endblock %}
+{% block page_title %}Student Management{% endblock %}
+{% block page_subtitle %}Borrower records, active circulation privileges and contact information{% endblock %}
+
+{% block content %}
+<!-- Search and Action Bar -->
+<div class="card" style="margin-bottom: 24px;">
+  <div class="card-body" style="padding: 18px 24px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+      <form method="GET" action="{{ url_for('students.index') }}" style="display: flex; gap: 10px; flex: 1; max-width: 520px;">
+        <input type="text" name="q" class="form-control" placeholder="Search by student ID, name, or department..." value="{{ search_q }}">
+        <button type="submit" class="btn btn-primary">Search</button>
+        {% if search_q %}
+          <a href="{{ url_for('students.index') }}" class="btn btn-outline">Clear</a>
+        {% endif %}
+      </form>
+      <div>
+        <button type="button" class="btn btn-primary" data-modal-open="addStudentModal">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>Register Student</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Student List Table Card -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+        <circle cx="9" cy="7" r="4"></circle>
+      </svg>
+      <span>Enrolled Borrowers ({{ students|length }})</span>
+    </div>
+    <div class="card-subtitle">Verified institutional library cards</div>
+  </div>
+  <div class="card-body" style="padding: 0;">
+    <div class="table-container" style="border: none; border-radius: 0;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Student ID</th>
+            <th>Full Name</th>
+            <th>Department</th>
+            <th>Contact Info</th>
+            <th>Active Loans</th>
+            <th style="text-align: right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in students %}
+          <tr>
+            <td><code class="code-pill" style="font-weight:700;">{{ s.student_number }}</code></td>
+            <td>
+              <div style="font-weight: 600; color: var(--text-main);">{{ s.full_name }}</div>
+              <div style="font-size: 11.5px; color: var(--text-muted);">Joined {{ s.created_at }}</div>
+            </td>
+            <td><span class="badge badge-lavender">{{ s.department }}</span></td>
+            <td>
+              <div><small>{{ s.email }}</small></div>
+              <div><small style="color:var(--text-muted);">{{ s.phone }}</small></div>
+            </td>
+            <td>
+              {% if s.active_loans_count > 0 %}
+                <span class="badge badge-info">{{ s.active_loans_count }} Active Books</span>
+              {% else %}
+                <span class="badge badge-success">No active loans</span>
+              {% endif %}
+            </td>
+            <td style="text-align: right; white-space: nowrap;">
+              <button type="button" class="btn btn-outline btn-sm btn-edit-student"
+                data-id="{{ s.student_id }}"
+                data-number="{{ s.student_number }}"
+                data-name="{{ s.full_name }}"
+                data-email="{{ s.email }}"
+                data-phone="{{ s.phone }}"
+                data-dept="{{ s.department }}">
+                Edit
+              </button>
+              <form method="POST" action="{{ url_for('students.delete_student', student_id=s.student_id) }}" style="display:inline-block;" onsubmit="return confirm('Delete student {{ s.full_name }}?');">
+                <button type="submit" class="btn btn-outline btn-sm" style="color:var(--color-danger); border-color:#fecaca;">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 36px;">No students registered yet.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Add Student Modal -->
+<div class="modal-overlay" id="addStudentModal">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <div class="modal-title">Register New Student</div>
+      <button type="button" class="modal-close" data-modal-close>&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('students.add_student') }}">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Student ID Number *</label>
+          <input type="text" name="student_number" class="form-control" placeholder="e.g. STU2026010" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Full Name *</label>
+          <input type="text" name="full_name" class="form-control" placeholder="e.g. John Doe" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address *</label>
+          <input type="email" name="email" class="form-control" placeholder="e.g. john@student.edu" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Phone Number</label>
+            <input type="text" name="phone" class="form-control" placeholder="e.g. 9876543210" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Department</label>
+            <input type="text" name="department" class="form-control" placeholder="e.g. Computer Science" required>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-primary">Enroll Student</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Student Modal -->
+<div class="modal-overlay" id="editStudentModal">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <div class="modal-title">Edit Student Information</div>
+      <button type="button" class="modal-close" data-modal-close>&times;</button>
+    </div>
+    <form method="POST" id="editStudentForm" action="">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Student Number (Read Only)</label>
+          <input type="text" id="edit_stu_number" class="form-control" readonly style="background:#f9f9fb;">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" name="full_name" id="edit_stu_name" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input type="email" name="email" id="edit_stu_email" class="form-control" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Phone</label>
+            <input type="text" name="phone" id="edit_stu_phone" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Department</label>
+            <input type="text" name="department" id="edit_stu_dept" class="form-control" required>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.querySelectorAll('.btn-edit-student').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const studentId = btn.getAttribute('data-id');
+      document.getElementById('editStudentForm').action = `/students/edit/${studentId}`;
+      document.getElementById('edit_stu_number').value = btn.getAttribute('data-number');
+      document.getElementById('edit_stu_name').value = btn.getAttribute('data-name');
+      document.getElementById('edit_stu_email').value = btn.getAttribute('data-email');
+      document.getElementById('edit_stu_phone').value = btn.getAttribute('data-phone');
+      document.getElementById('edit_stu_dept').value = btn.getAttribute('data-dept');
+      openModal('editStudentModal');
+    });
+  });
+</script>
+{% endblock %}

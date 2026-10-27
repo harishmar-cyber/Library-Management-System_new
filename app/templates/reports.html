@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Reports & Audit History{% endblock %}
+{% block page_title %}Reports & Transaction History{% endblock %}
+{% block page_subtitle %}Comprehensive circulation analytics, audit logging, and LIFO Stack Undo control{% endblock %}
+
+{% block content %}
+<!-- Analytics Summary Cards -->
+<div class="metrics-grid">
+  <div class="metric-card">
+    <div class="metric-icon-box" style="background:#eff6ff; color:var(--color-info);">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+      </svg>
+    </div>
+    <div class="metric-info">
+      <div class="metric-title">Active Loans</div>
+      <div class="metric-value">{{ circ_summary.active_loans }}</div>
+      <span class="metric-badge badge-info">Currently with Students</span>
+    </div>
+  </div>
+
+  <div class="metric-card">
+    <div class="metric-icon-box" style="background:#fef2f2; color:var(--color-danger);">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+    </div>
+    <div class="metric-info">
+      <div class="metric-title">Overdue Books</div>
+      <div class="metric-value">{{ circ_summary.overdue_loans }}</div>
+      <span class="metric-badge badge-danger">Fines: ${{ "%.2f"|format(circ_summary.total_fines) }}</span>
+    </div>
+  </div>
+
+  <div class="metric-card">
+    <div class="metric-icon-box" style="background:#ecfdf5; color:var(--color-success);">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+    </div>
+    <div class="metric-info">
+      <div class="metric-title">Returned Loans</div>
+      <div class="metric-value">{{ circ_summary.returned_loans }}</div>
+      <span class="metric-badge badge-success">Completed Returns</span>
+    </div>
+  </div>
+
+  <div class="metric-card">
+    <div class="metric-icon-box" style="background:var(--color-primary-soft); color:var(--color-primary);">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="1 4 1 10 7 10"></polyline>
+        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+      </svg>
+    </div>
+    <div class="metric-info">
+      <div class="metric-title">Undo Stack Depth</div>
+      <div class="metric-value">{{ stack_size }}</div>
+      <span class="metric-badge badge-lavender">Reversible Actions</span>
+    </div>
+  </div>
+</div>
+
+<!-- Category Distribution -->
+<div class="card" style="margin-bottom: 24px;">
+  <div class="card-header">
+    <div class="card-title">Catalog Inventory by Discipline</div>
+  </div>
+  <div class="card-body">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;">
+      {% for c in category_stats %}
+      <div style="background: var(--color-primary-subtle); border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 14px 18px;">
+        <div style="font-weight: 700; color: var(--text-main); font-size: 14px;">{{ c.category }}</div>
+        <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 12px; color: var(--text-secondary);">
+          <span>Titles: <strong>{{ c.book_count }}</strong></span>
+          <span>Copies: <strong>{{ c.total_copies }}</strong></span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Transaction Audit History Ledger -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+        </svg>
+        <span>Librarian Transaction Audit Ledger ({{ transactions|length }})</span>
+      </div>
+      <div class="card-subtitle">Permanent record of actions; tracked onto LIFO Undo Stack</div>
+    </div>
+    <button type="button" class="btn btn-secondary btn-sm" id="btnPageUndo">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <polyline points="1 4 1 10 7 10"></polyline>
+        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+      </svg>
+      <span>Pop Stack (Undo Last)</span>
+      <span class="dsa-badge" style="padding: 1px 6px; font-size: 10px;">LIFO</span>
+    </button>
+  </div>
+
+  <div class="card-body" style="padding: 0;">
+    <div class="table-container" style="border: none; border-radius: 0;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Tx ID</th>
+            <th>Action Type</th>
+            <th>Target Entity</th>
+            <th>Performed By</th>
+            <th>Timestamp</th>
+            <th style="text-align: right;">State</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in transactions %}
+          <tr>
+            <td style="font-weight: 700; color: var(--color-primary);">#TX-{{ t.transaction_id }}</td>
+            <td>
+              <strong style="color:var(--text-main);">{{ t.action_type|replace('_', ' ')|title }}</strong>
+            </td>
+            <td>
+              <span class="code-pill">{{ t.entity_type }} #{{ t.entity_id }}</span>
+            </td>
+            <td>{{ t.user_name or 'System Administrator' }}</td>
+            <td>{{ t.timestamp }}</td>
+            <td style="text-align: right;">
+              {% if t.undone %}
+                <span class="badge badge-warning">Undone via Stack</span>
+              {% else %}
+                <span class="badge badge-success">Active / Applied</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 36px;">No transactions logged yet.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById('btnPageUndo')?.addEventListener('click', async () => {
+    if (!confirm('Pop and undo the top action from the LIFO Stack?')) return;
+    const res = await apiRequest('/api/undo', 'POST');
+    if (res.success) {
+      showToast(res.message, 'success');
+      setTimeout(() => window.location.reload(), 900);
+    } else {
+      showToast(res.message, 'warning');
+    }
+  });
+</script>
+{% endblock %}

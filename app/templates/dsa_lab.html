@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+
+{% block title %}DSA Demonstration Lab{% endblock %}
+{% block page_title %}Interactive DSA Demonstration Lab{% endblock %}
+{% block page_subtitle %}Live computational playground for Hashing, Searching, Sorting, Queues, and Stacks{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dsa_lab.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Tab Selector -->
+<div class="lab-tabs">
+  <button type="button" class="lab-tab-btn active" data-tab="tabHash">
+    1. Custom Hash Table O(1)
+  </button>
+  <button type="button" class="lab-tab-btn" data-tab="tabSearch">
+    2. Searching (Linear vs Binary)
+  </button>
+  <button type="button" class="lab-tab-btn" data-tab="tabSort">
+    3. Sorting (Merge vs Quick)
+  </button>
+  <button type="button" class="lab-tab-btn" data-tab="tabStack">
+    4. Action Undo Stack (LIFO)
+  </button>
+  <button type="button" class="lab-tab-btn" data-tab="tabQueue">
+    5. Reservation Queue (FIFO)
+  </button>
+</div>
+
+<!-- ==========================================
+     TAB 1: CUSTOM HASH TABLE
+     ========================================== -->
+<div class="lab-panel active" id="tabHash">
+  <div class="metrics-grid" style="margin-bottom: 24px;">
+    <div class="metric-card">
+      <div class="metric-icon-box">#</div>
+      <div class="metric-info">
+        <div class="metric-title">Capacity (Buckets)</div>
+        <div class="metric-value">{{ hash_stats.capacity }}</div>
+        <span class="metric-badge badge-lavender">Dynamic Resize at 75%</span>
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon-box" style="background:#ecfdf5; color:var(--color-success);">λ</div>
+      <div class="metric-info">
+        <div class="metric-title">Load Factor (α)</div>
+        <div class="metric-value">{{ hash_stats.load_factor }}</div>
+        <span class="metric-badge badge-success">{{ hash_stats.total_items }} Total Keys Stored</span>
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon-box" style="background:#eff6ff; color:var(--color-info);">✓</div>
+      <div class="metric-info">
+        <div class="metric-title">Occupied Buckets</div>
+        <div class="metric-value">{{ hash_stats.occupied_buckets }} / {{ hash_stats.capacity }}</div>
+        <span class="metric-badge badge-info">{{ hash_stats.empty_buckets }} Empty Buckets</span>
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon-box" style="background:#fffbeb; color:var(--color-warning);">⚡</div>
+      <div class="metric-info">
+        <div class="metric-title">Max Chain Depth</div>
+        <div class="metric-value">{{ hash_stats.max_chain_length }}</div>
+        <span class="metric-badge badge-warning">{{ hash_stats.collision_count }} Collisions Resolved</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <span>Bucket Array & Separate Chaining Linked Lists</span>
+      </div>
+      <span class="dsa-badge">Hash Function: Polynomial Rolling (Prime 31)</span>
+    </div>
+    <div class="card-body">
+      <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+        Each slot represents an index in the array `h(key) = (sum(c * 31^i)) mod capacity`. Collisions are resolved through separate chaining linked lists.
+      </p>
+
+      <div class="hash-bucket-grid">
+        {% for b in hash_stats.distribution %}
+        <div class="hash-bucket-slot {% if b.chain_length > 0 %}occupied{% endif %}">
+          <div class="bucket-idx">Slot [{{ b.bucket_index }}]</div>
+          <div class="bucket-count">{{ b.chain_length }} item{% if b.chain_length != 1 %}s{% endif %}</div>
+          <div class="bucket-chain">
+            {% for k in b.stored_keys %}
+              <div class="chain-node" title="{{ k }}">{{ k }}</div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================
+     TAB 2: SEARCHING LAB
+     ========================================== -->
+<div class="lab-panel" id="tabSearch">
+  <div class="card" style="margin-bottom: 24px;">
+    <div class="card-body" style="padding: 20px 24px;">
+      <div style="display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end;">
+        <div style="flex: 2; min-width: 220px;">
+          <label class="form-label">Search Query</label>
+          <input type="text" id="searchTargetInput" class="form-control" placeholder="e.g. Algorithms or Clean" value="Algorithms">
+        </div>
+        <div style="flex: 1; min-width: 160px;">
+          <label class="form-label">Algorithm</label>
+          <select id="searchAlgoSelect" class="form-control">
+            <option value="linear">Linear Search O(n)</option>
+            <option value="binary">Binary Search O(log n)</option>
+          </select>
+        </div>
+        <div style="flex: 1; min-width: 140px;">
+          <label class="form-label">Target Field</label>
+          <select id="searchKeyField" class="form-control">
+            <option value="title">Title</option>
+            <option value="author">Author</option>
+            <option value="category">Category</option>
+          </select>
+        </div>
+        <div>
+          <button type="button" class="btn btn-primary" id="btnExecuteSearch">
+            Run Search Experiment
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px;">
+    <!-- Search Performance Metrics -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Performance Metrics</div>
+      </div>
+      <div class="card-body">
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <div class="stat-item">
+            <div class="stat-item-label">Time Complexity</div>
+            <div class="stat-item-val" id="searchMetricComplexity">—</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-item-label">Comparisons Performed</div>
+            <div class="stat-item-val" id="searchMetricComparisons">—</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-item-label">Execution Time</div>
+            <div class="stat-item-val" id="searchMetricTime">—</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-item-label">Matching Items</div>
+            <div class="stat-item-val" id="searchMetricMatches">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search Trace Log -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Step-by-Step Search Comparison Trace</div>
+        <span class="dsa-badge">Live Trace Console</span>
+      </div>
+      <div class="card-body" style="padding: 16px;">
+        <div class="trace-terminal" id="searchTraceTerminal">
+          <div class="trace-line">Click 'Run Search Experiment' to observe step-by-step comparisons...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================
+     TAB 3: SORTING LAB
+     ========================================== -->
+<div class="lab-panel" id="tabSort">
+  <div class="card" style="margin-bottom: 24px;">
+    <div class="card-body" style="padding: 20px 24px;">
+      <div style="display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end;">
+        <div style="flex: 1; min-width: 170px;">
+          <label class="form-label">Sorting Algorithm</label>
+          <select id="sortAlgoSelect" class="form-control">
+            <option value="merge">Merge Sort (Stable Divide & Conquer)</option>
+            <option value="quick">Quick Sort (Partitioning)</option>
+          </select>
+        </div>
+        <div style="flex: 1; min-width: 160px;">
+          <label class="form-label">Sort Key</label>
+          <select id="sortKeyField" class="form-control">
+            <option value="title">Book Title</option>
+            <option value="author">Author Name</option>
+            <option value="publication_year">Publication Year</option>
+            <option value="available_copies">Available Copies</option>
+          </select>
+        </div>
+        <div style="flex: 1; min-width: 130px;">
+          <label class="form-label">Direction</label>
+          <select id="sortOrderSelect" class="form-control">
+            <option value="asc">Ascending (A-Z / 0-9)</option>
+            <option value="desc">Descending (Z-A / 9-0)</option>
+          </select>
+        </div>
+        <div>
+          <button type="button" class="btn btn-primary" id="btnExecuteSort">
+            Run Sorting Experiment
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px; margin-bottom: 24px;">
+    <!-- Sort Performance Metrics -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Sorting Benchmarks</div>
+      </div>
+      <div class="card-body">
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <div class="stat-item">
+            <div class="stat-item-label">Algorithm Complexity</div>
+            <div class="stat-item-val" id="sortMetricComplexity">—</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-item-label">Total Comparisons</div>
+            <div class="stat-item-val" id="sortMetricComparisons">—</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-item-label">Total Moves / Partitions</div>
+            <div class="stat-item-val" id="sortMetricMoves">—</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-item-label">Sorting Time</div>
+            <div class="stat-item-val" id="sortMetricTime">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trace Console -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Recursion & Merge/Partition Passes</div>
+        <span class="dsa-badge">Pass Tracer</span>
+      </div>
+      <div class="card-body" style="padding: 16px;">
+        <div class="trace-terminal" id="sortTraceTerminal">
+          <div class="trace-line">Click 'Run Sorting Experiment' to trace recursive partitioning and merges...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sorted Result Preview -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Sorted Catalog Output Preview</div>
+    </div>
+    <div class="card-body">
+      <div id="sortedPreviewList" style="display: flex; flex-wrap: wrap; gap: 10px;">
+        <div style="color: var(--text-muted); font-size: 13px;">Run experiment to preview sorted ordering.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================
+     TAB 4: ACTION UNDO STACK
+     ========================================== -->
+<div class="lab-panel" id="tabStack">
+  <div class="card" style="margin-bottom: 24px;">
+    <div class="card-header">
+      <div class="card-title">LIFO Action Undo Stack Architecture</div>
+      <span class="dsa-badge">{{ stack_size }} Active Frames on Stack</span>
+    </div>
+    <div class="card-body">
+      <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 24px;">
+        Every mutation (book deletion, return, issue, student registration) is pushed onto this stack in O(1). Clicking <strong>Undo Action</strong> pops the top element and reverses the operation.
+      </p>
+
+      <div class="stack-column">
+        {% for item in stack_items %}
+        <div class="stack-frame {% if loop.first %}top{% endif %}">
+          {% if loop.first %}
+            <div class="stack-frame-pointer">&larr; TOP (Next Pop)</div>
+          {% endif %}
+          <div style="font-size: 11px; font-weight: 700; color: var(--color-primary); text-transform: uppercase;">
+            Frame #{{ item.transaction_id }} &bull; {{ item.action_type|replace('_', ' ')|title }}
+          </div>
+          <div style="font-size: 13px; font-weight: 600; color: var(--text-main); margin-top: 4px;">
+            Target: {{ item.entity_type }} #{{ item.entity_id }}
+          </div>
+        </div>
+        {% else %}
+        <div style="text-align: center; color: var(--text-muted); padding: 30px;">
+          The stack is currently empty.
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================
+     TAB 5: RESERVATION QUEUE
+     ========================================== -->
+<div class="lab-panel" id="tabQueue">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">FIFO Reservation Queue Operational Model</div>
+      <a href="{{ url_for('reservations.index') }}" class="btn btn-primary btn-sm">Open Live Reservation Queues</a>
+    </div>
+    <div class="card-body">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px;">
+        <div class="card" style="padding: 18px; border: 1px solid var(--border-color);">
+          <h4 style="font-size: 14px; font-weight: 700; color: var(--color-primary); margin-bottom: 6px;">1. Enqueue (Tail Insertion)</h4>
+          <p style="font-size: 12.5px; color: var(--text-secondary);">
+            When a borrower requests a checked-out book, a new node is appended to the tail pointer in <code>O(1)</code> time.
+          </p>
+        </div>
+        <div class="card" style="padding: 18px; border: 1px solid var(--border-color);">
+          <h4 style="font-size: 14px; font-weight: 700; color: var(--color-primary); margin-bottom: 6px;">2. Dequeue (Head Removal)</h4>
+          <p style="font-size: 12.5px; color: var(--text-secondary);">
+            When a copy is returned, the front node is dequeued in <code>O(1)</code> time, fulfilling the reservation for the earliest requester.
+          </p>
+        </div>
+        <div class="card" style="padding: 18px; border: 1px solid var(--border-color);">
+          <h4 style="font-size: 14px; font-weight: 700; color: var(--color-primary); margin-bottom: 6px;">3. Strict Fairness</h4>
+          <p style="font-size: 12.5px; color: var(--text-secondary);">
+            Guarantees no starvation or arbitrary preference; reservations are processed strictly in first-come, first-served sequence.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dsa_lab.js') }}"></script>
+{% endblock %}

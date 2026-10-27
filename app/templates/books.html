@@ -1,0 +1,392 @@
+{% extends "base.html" %}
+
+{% block title %}Book Catalog{% endblock %}
+{% block page_title %}Book Management{% endblock %}
+{% block page_subtitle %}Inventory catalog powered by Custom Hash Table and Sorting algorithms{% endblock %}
+
+{% block content %}
+<!-- Search & Algorithm Controls Card -->
+<div class="card" style="margin-bottom: 24px;">
+  <div class="card-body" style="padding: 20px 24px;">
+    <form method="GET" action="{{ url_for('books.index') }}">
+      <div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end;">
+        
+        <!-- Search Field -->
+        <div style="flex: 2; min-width: 240px;">
+          <label class="form-label">Search Query</label>
+          <div class="input-group">
+            <input type="text" name="q" class="form-control" placeholder="Search by title, author, or ISBN..." value="{{ search_q }}">
+          </div>
+        </div>
+
+        <!-- Search Criterion -->
+        <div style="flex: 1; min-width: 140px;">
+          <label class="form-label">Search In</label>
+          <select name="by" class="form-control">
+            <option value="title" {% if search_by == 'title' %}selected{% endif %}>Title (Linear Search)</option>
+            <option value="author" {% if search_by == 'author' %}selected{% endif %}>Author (Linear Search)</option>
+            <option value="category" {% if search_by == 'category' %}selected{% endif %}>Category</option>
+            <option value="isbn" {% if search_by == 'isbn' %}selected{% endif %}>ISBN (Hash Table O(1))</option>
+          </select>
+        </div>
+
+        <!-- Sort By Field -->
+        <div style="flex: 1; min-width: 150px;">
+          <label class="form-label">Sort Attribute</label>
+          <select name="sort" class="form-control">
+            <option value="title" {% if sort_by == 'title' %}selected{% endif %}>Title</option>
+            <option value="author" {% if sort_by == 'author' %}selected{% endif %}>Author</option>
+            <option value="publication_year" {% if sort_by == 'publication_year' %}selected{% endif %}>Publication Year</option>
+            <option value="available_copies" {% if sort_by == 'available_copies' %}selected{% endif %}>Available Copies</option>
+          </select>
+        </div>
+
+        <!-- Sort Algorithm -->
+        <div style="flex: 1; min-width: 150px;">
+          <label class="form-label">DSA Sort Method</label>
+          <select name="algo" class="form-control">
+            <option value="merge" {% if sort_algo == 'merge' %}selected{% endif %}>Merge Sort (Stable)</option>
+            <option value="quick" {% if sort_algo == 'quick' %}selected{% endif %}>Quick Sort (Divide & Conq)</option>
+          </select>
+        </div>
+
+        <!-- Direction -->
+        <div style="width: 110px;">
+          <label class="form-label">Order</label>
+          <select name="dir" class="form-control">
+            <option value="asc" {% if sort_dir == 'asc' %}selected{% endif %}>Ascending</option>
+            <option value="desc" {% if sort_dir == 'desc' %}selected{% endif %}>Descending</option>
+          </select>
+        </div>
+
+        <!-- Actions -->
+        <div>
+          <button type="submit" class="btn btn-primary">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <span>Apply Filter</span>
+          </button>
+        </div>
+
+        {% if search_q or sort_by != 'title' or sort_algo != 'merge' %}
+        <div>
+          <a href="{{ url_for('books.index') }}" class="btn btn-outline" title="Clear Filters">Reset</a>
+        </div>
+        {% endif %}
+
+      </div>
+    </form>
+
+    <!-- Active Algorithm Metadata Ribbon -->
+    <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border-light); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="dsa-badge">Active DSA Sort</span>
+        <span style="font-size: 12.5px; color: var(--text-secondary); font-weight: 500;">{{ sort_meta }}</span>
+      </div>
+      {% if search_meta.applied %}
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="dsa-badge" style="background:#e8fdf0; color:var(--color-success); border-color:#a7f3d0;">DSA Search</span>
+        <span style="font-size: 12.5px; color: var(--text-secondary); font-weight: 500;">{{ search_meta.dsa_used }}</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Books Catalog Table Card -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+        </svg>
+        <span>Catalog Inventory ({{ books|length }} books listed)</span>
+      </div>
+      <div class="card-subtitle">All books indexed in custom separate-chaining hash table</div>
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <button type="button" class="btn btn-secondary btn-sm" data-modal-open="instantLookupModal">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+        </svg>
+        <span>O(1) Hash Lookup</span>
+      </button>
+      <button type="button" class="btn btn-primary btn-sm" data-modal-open="addBookModal">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>Add New Book</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="card-body" style="padding: 0;">
+    <div class="table-container" style="border: none; border-radius: 0;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>ISBN</th>
+            <th>Title & Author</th>
+            <th>Category</th>
+            <th>Year</th>
+            <th>Copies</th>
+            <th>Shelf</th>
+            <th style="text-align: right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in books %}
+          <tr>
+            <td style="font-weight: 700; color: var(--color-primary);">#{{ b.book_id }}</td>
+            <td><code class="code-pill">{{ b.isbn }}</code></td>
+            <td>
+              <div style="font-weight: 600; color: var(--text-main);">{{ b.title }}</div>
+              <div style="font-size: 12px; color: var(--text-muted);">by {{ b.author }}</div>
+            </td>
+            <td>
+              <span class="badge badge-lavender">{{ b.category }}</span>
+            </td>
+            <td>{{ b.publication_year }}</td>
+            <td>
+              {% if b.available_copies > 0 %}
+                <span class="badge badge-success">{{ b.available_copies }} / {{ b.total_copies }} Available</span>
+              {% else %}
+                <span class="badge badge-danger">0 / {{ b.total_copies }} (Reserved/Out)</span>
+              {% endif %}
+            </td>
+            <td><span style="font-size: 12px; color: var(--text-secondary);">{{ b.shelf_location or 'Section A' }}</span></td>
+            <td style="text-align: right; white-space: nowrap;">
+              <button type="button" class="btn btn-outline btn-sm btn-edit" 
+                data-id="{{ b.book_id }}"
+                data-isbn="{{ b.isbn }}"
+                data-title="{{ b.title }}"
+                data-author="{{ b.author }}"
+                data-category="{{ b.category }}"
+                data-year="{{ b.publication_year }}"
+                data-total="{{ b.total_copies }}"
+                data-available="{{ b.available_copies }}"
+                data-shelf="{{ b.shelf_location }}"
+                title="Edit Book">
+                Edit
+              </button>
+              
+              <form method="POST" action="{{ url_for('books.delete_book', book_id=b.book_id) }}" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to delete \'{{ b.title }}\'? (You can undo this later from Stack)');">
+                <button type="submit" class="btn btn-outline btn-sm" style="color:var(--color-danger); border-color:#fecaca;" title="Delete Book">
+                  Delete
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 36px;">
+              No books found matching criteria.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Add Book Modal -->
+<div class="modal-overlay" id="addBookModal">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <div class="modal-title">Add New Book to Catalog</div>
+      <button type="button" class="modal-close" data-modal-close>&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('books.add_book') }}">
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">ISBN Code *</label>
+            <input type="text" name="isbn" class="form-control" placeholder="e.g. 978-0132350884" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Publication Year</label>
+            <input type="number" name="publication_year" class="form-control" value="2026" min="1800" max="2099" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Book Title *</label>
+          <input type="text" name="title" class="form-control" placeholder="e.g. Clean Architecture" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Author Name *</label>
+          <input type="text" name="author" class="form-control" placeholder="e.g. Robert C. Martin" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Category / Genre</label>
+            <input type="text" name="category" class="form-control" placeholder="e.g. Software Engineering" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Total Copies</label>
+            <input type="number" name="total_copies" class="form-control" value="3" min="1" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Shelf Location</label>
+          <input type="text" name="shelf_location" class="form-control" placeholder="e.g. Shelf SE-05" value="Section A">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-primary">Save & Hash Book</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Book Modal -->
+<div class="modal-overlay" id="editBookModal">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <div class="modal-title">Edit Book Details</div>
+      <button type="button" class="modal-close" data-modal-close>&times;</button>
+    </div>
+    <form method="POST" id="editBookForm" action="">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">ISBN (Read Only)</label>
+          <input type="text" id="edit_isbn" class="form-control" readonly style="background:#f9f9fb;">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Book Title</label>
+          <input type="text" name="title" id="edit_title" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Author Name</label>
+          <input type="text" name="author" id="edit_author" class="form-control" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <input type="text" name="category" id="edit_category" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Year</label>
+            <input type="number" name="publication_year" id="edit_year" class="form-control" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Total Copies</label>
+            <input type="number" name="total_copies" id="edit_total" class="form-control" min="1" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Available Copies</label>
+            <input type="number" name="available_copies" id="edit_available" class="form-control" min="0" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Shelf Location</label>
+          <input type="text" name="shelf_location" id="edit_shelf" class="form-control">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-primary">Update Book</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Instant O(1) Hash Lookup Demo Modal -->
+<div class="modal-overlay" id="instantLookupModal">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <div class="modal-title">O(1) Custom Hash Table Lookup Demo</div>
+      <button type="button" class="modal-close" data-modal-close>&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+        Queries the in-memory <code>CustomHashTable</code> directly using polynomial rolling hash index resolution.
+      </p>
+      <div class="input-group" style="margin-bottom: 16px;">
+        <input type="text" id="hashLookupInput" class="form-control" placeholder="Enter exact ISBN (e.g. 978-0262033848)">
+        <button type="button" class="btn btn-primary" id="btnRunHashLookup">Lookup</button>
+      </div>
+
+      <div id="hashLookupResult" style="display: none; padding: 16px; border-radius: var(--radius-sm); background: var(--color-primary-soft); border: 1px solid var(--color-primary-border);">
+        <!-- Filled dynamically -->
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline" data-modal-close>Close</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Bind edit buttons
+  document.querySelectorAll('.btn-edit').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const bookId = btn.getAttribute('data-id');
+      document.getElementById('editBookForm').action = `/books/edit/${bookId}`;
+      document.getElementById('edit_isbn').value = btn.getAttribute('data-isbn');
+      document.getElementById('edit_title').value = btn.getAttribute('data-title');
+      document.getElementById('edit_author').value = btn.getAttribute('data-author');
+      document.getElementById('edit_category').value = btn.getAttribute('data-category');
+      document.getElementById('edit_year').value = btn.getAttribute('data-year');
+      document.getElementById('edit_total').value = btn.getAttribute('data-total');
+      document.getElementById('edit_available').value = btn.getAttribute('data-available');
+      document.getElementById('edit_shelf').value = btn.getAttribute('data-shelf');
+      openModal('editBookModal');
+    });
+  });
+
+  // Hash Lookup Demo
+  document.getElementById('btnRunHashLookup').addEventListener('click', async () => {
+    const isbn = document.getElementById('hashLookupInput').value.trim();
+    if (!isbn) {
+      showToast('Please type an ISBN to lookup', 'warning');
+      return;
+    }
+
+    const res = await apiRequest(`/api/books/hash-lookup?isbn=${encodeURIComponent(isbn)}`);
+    const container = document.getElementById('hashLookupResult');
+    container.style.display = 'block';
+
+    if (res.found) {
+      const b = res.book;
+      container.innerHTML = `
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+          <strong style="color:var(--color-primary); font-size:14px;">✓ Match Found in O(1) Time!</strong>
+          <span class="dsa-badge">Hash Table Hit</span>
+        </div>
+        <div style="font-weight:700; color:var(--text-main); font-size:15px;">${b.title}</div>
+        <div style="font-size:13px; color:var(--text-secondary); margin-top:2px;">by ${b.author} (${b.publication_year})</div>
+        <div style="margin-top:10px; font-size:12px; display:flex; gap:12px; flex-wrap:wrap;">
+          <span>Category: <b>${b.category}</b></span>
+          <span>Available: <b>${b.available_copies} / ${b.total_copies}</b></span>
+          <span>Shelf: <b>${b.shelf_location}</b></span>
+        </div>
+      `;
+    } else {
+      container.innerHTML = `
+        <div style="color:var(--color-danger); font-weight:600;">✗ No book matching ISBN '${isbn}' found in Hash Table.</div>
+      `;
+    }
+  });
+</script>
+{% endblock %}

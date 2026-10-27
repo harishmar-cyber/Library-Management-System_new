@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}System Overview & Metrics{% endblock %}
+{% block page_subtitle %}Live metrics, loan statistics and active DSA engine state{% endblock %}
+
+{% block content %}
+<!-- Metrics Cards Grid -->
+<div class="metrics-grid">
+  <!-- Total Titles -->
+  <div class="metric-card">
+    <div class="metric-icon-box">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+      </svg>
+    </div>
+    <div class="metric-info">
+      <div class="metric-title">Catalog Titles</div>
+      <div class="metric-value">{{ metrics.total_books }}</div>
+      <span class="metric-badge badge-lavender">{{ metrics.available_copies }} of {{ metrics.total_copies }} copies in stock</span>
+    </div>
+  </div>
+
+  <!-- Active Students -->
+  <div class="metric-card">
+    <div class="metric-icon-box" style="background:#ecfdf5; color:var(--color-success);">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+        <circle cx="9" cy="7" r="4"></circle>
+      </svg>
+    </div>
+    <div class="metric-info">
+      <div class="metric-title">Enrolled Students</div>
+      <div class="metric-value">{{ metrics.total_students }}</div>
+      <span class="metric-badge badge-success">Verified Borrowers</span>
+    </div>
+  </div>
+
+  <!-- Currently Issued -->
+  <div class="metric-card">
+    <div class="metric-icon-box" style="background:#eff6ff; color:var(--color-info);">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 11 12 14 22 4"></polyline>
+        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+      </svg>
+    </div>
+    <div class="metric-info">
+      <div class="metric-title">Active Loans</div>
+      <div class="metric-value">{{ metrics.active_issues }}</div>
+      <span class="metric-badge badge-info">{{ metrics.overdue_issues }} overdue loans</span>
+    </div>
+  </div>
+
+  <!-- Reservation Queue -->
+  <div class="metric-card">
+    <div class="metric-icon-box" style="background:#fffbeb; color:var(--color-warning);">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <polyline points="12 6 12 12 16 14"></polyline>
+      </svg>
+    </div>
+    <div class="metric-info">
+      <div class="metric-title">Waitlist Queue</div>
+      <div class="metric-value">{{ metrics.pending_reservations }}</div>
+      <span class="metric-badge badge-warning">FIFO Queue Active</span>
+    </div>
+  </div>
+</div>
+
+<!-- DSA Quick Engine Banner -->
+<div class="card" style="margin-bottom: 28px; background: linear-gradient(135deg, #ffffff 0%, #f6f2fc 100%); border-left: 5px solid var(--color-primary);">
+  <div class="card-body" style="padding: 22px 28px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+          <h3 style="font-size: 16px; font-weight: 700; color: var(--text-main);">DSA Engine Core Status</h3>
+          <span class="dsa-badge">All 7 Modules Active</span>
+        </div>
+        <p style="font-size: 13px; color: var(--text-secondary); max-width: 650px;">
+          Custom Separate Chaining Hash Table, Merge/Quick Sort, Binary/Linear Search, FIFO Reservation Queue, LIFO Undo Stack, and Graph BFS/DFS traversal are active.
+        </p>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <a href="{{ url_for('dsa_lab.index') }}" class="btn btn-secondary btn-sm">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          <span>Open DSA Lab</span>
+        </a>
+        <a href="{{ url_for('recommendations.index') }}" class="btn btn-primary btn-sm">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="18" cy="5" r="3"></circle>
+            <circle cx="6" cy="12" r="3"></circle>
+            <circle cx="18" cy="19" r="3"></circle>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+          </svg>
+          <span>Explore Graph ({{ metrics.graph_edges }} Edges)</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Two-Column Grid: Active Loans & Recent Activity -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 24px;">
+  <!-- Recent Loans Table -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+          </svg>
+          <span>Active & Recent Book Loans</span>
+        </div>
+        <div class="card-subtitle">Latest book circulations and due dates</div>
+      </div>
+      <a href="{{ url_for('issues.index') }}" class="btn btn-outline btn-sm">View All</a>
+    </div>
+    <div class="card-body" style="padding: 0;">
+      <div class="table-container" style="border: none; border-radius: 0;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Book Title</th>
+              <th>Student</th>
+              <th>Due Date</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for issue in recent_issues %}
+            <tr>
+              <td>
+                <strong style="color:var(--text-main); font-weight:600;">{{ issue.book_title }}</strong>
+              </td>
+              <td>
+                <div>{{ issue.student_name }}</div>
+                <small class="code-pill">{{ issue.student_number }}</small>
+              </td>
+              <td>{{ issue.due_date }}</td>
+              <td>
+                {% if issue.status == 'overdue' %}
+                  <span class="badge badge-danger">Overdue (${{ "%.2f"|format(issue.fine_amount) }})</span>
+                {% elif issue.status == 'returned' %}
+                  <span class="badge badge-success">Returned</span>
+                {% else %}
+                  <span class="badge badge-info">Issued</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 24px;">No recent issues recorded.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent System Transactions (Stack Undo Source) -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="12 8 12 12 14 14"></polyline>
+            <path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5"></path>
+          </svg>
+          <span>Librarian Action Audit Log</span>
+        </div>
+        <div class="card-subtitle">Tracked on LIFO Stack for undo operations</div>
+      </div>
+      <a href="{{ url_for('reports.index') }}" class="btn btn-outline btn-sm">Audit History</a>
+    </div>
+    <div class="card-body" style="padding: 16px 20px;">
+      {% for tx in recent_transactions %}
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border-light);">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 8px; height: 8px; border-radius: 50%; background: {% if tx.undone %}var(--text-muted){% else %}var(--color-primary){% endif %};"></div>
+            <div>
+              <div style="font-size: 13.5px; font-weight: 600; color: var(--text-main);">
+                {{ tx.action_type|replace('_', ' ')|title }}
+                {% if tx.undone %}
+                  <span class="badge badge-warning" style="font-size: 10px; margin-left: 4px;">Undone</span>
+                {% endif %}
+              </div>
+              <div style="font-size: 11.5px; color: var(--text-muted);">
+                Entity: <span class="code-pill">{{ tx.entity_type }} #{{ tx.entity_id }}</span> &bull; By {{ tx.user_name or 'System' }}
+              </div>
+            </div>
+          </div>
+          <div style="font-size: 11.5px; color: var(--text-muted);">
+            {{ tx.timestamp }}
+          </div>
+        </div>
+      {% else %}
+        <div style="text-align: center; color: var(--text-muted); padding: 24px;">No actions logged in stack yet.</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

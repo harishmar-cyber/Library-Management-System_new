@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}Book Reservation Queue{% endblock %}
+{% block page_title %}Book Reservation Queues{% endblock %}
+{% block page_subtitle %}First-In, First-Out (FIFO) queue for fair, chronological book allocations{% endblock %}
+
+{% block content %}
+<!-- FIFO Queue Concept Banner -->
+<div class="card" style="margin-bottom: 24px; border-left: 5px solid var(--color-primary); background: linear-gradient(135deg, #ffffff 0%, #f6f2fc 100%);">
+  <div class="card-body" style="padding: 20px 24px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+          <h3 style="font-size: 16px; font-weight: 700; color: var(--text-main);">FIFO Queue Algorithm Guarantee</h3>
+          <span class="dsa-badge">Linked List Queue (Head & Tail)</span>
+        </div>
+        <p style="font-size: 13px; color: var(--text-secondary); max-width: 680px;">
+          When an in-demand book is checked out, students enqueue at the tail of that book's queue. Upon return or restock, the librarian dequeues from the head to serve the earliest requester.
+        </p>
+      </div>
+      <div>
+        <button type="button" class="btn btn-primary" data-modal-open="enqueueModal">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>Enqueue New Reservation</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Visual Queues per Book -->
+<div style="display: flex; flex-direction: column; gap: 24px; margin-bottom: 32px;">
+  <h3 style="font-size: 16px; font-weight: 700; color: var(--text-main); display:flex; align-items:center; gap:8px;">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <line x1="8" y1="6" x2="21" y2="6"></line>
+      <line x1="8" y1="12" x2="21" y2="12"></line>
+      <line x1="8" y1="18" x2="21" y2="18"></line>
+    </svg>
+    <span>Active Book Waiting Lines</span>
+  </h3>
+
+  {% for book_id, queue in grouped_queues.items() %}
+  <div class="card">
+    <div class="card-header" style="background:#faf8fe;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <h4 style="font-size: 15px; font-weight: 700; color: var(--text-main);">{{ queue.book_title }}</h4>
+          <span class="code-pill">{{ queue.isbn }}</span>
+          <span class="badge badge-lavender">{{ queue.reservations|length }} Students in Line</span>
+          {% if queue.available_copies > 0 %}
+            <span class="badge badge-success">{{ queue.available_copies }} In Stock (Ready to Dequeue)</span>
+          {% else %}
+            <span class="badge badge-danger">0 Copies Available</span>
+          {% endif %}
+        </div>
+      </div>
+      <div>
+        <!-- Serve FIFO Head Button -->
+        <form method="POST" action="{{ url_for('reservations.dequeue_reservation', book_id=book_id) }}" style="display:inline-block;" onsubmit="return confirm('Dequeue and serve the earliest student in line for this book?');">
+          <button type="submit" class="btn btn-secondary btn-sm" title="Dequeue Head Element (FIFO)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="9 11 12 14 22 4"></polyline>
+            </svg>
+            <span>Serve Head (Dequeue)</span>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Visual Linked Queue Pipeline -->
+    <div class="card-body" style="padding: 20px 24px;">
+      <div style="display: flex; align-items: center; gap: 14px; overflow-x: auto; padding-bottom: 8px;">
+        <div style="padding: 6px 12px; background: var(--color-primary); color: white; border-radius: var(--radius-sm); font-size: 11px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">
+          FRONT / HEAD
+        </div>
+
+        {% for item in queue.reservations %}
+        <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+          <div style="background: var(--bg-surface); border: 2px solid {% if loop.first %}var(--color-primary){% else %}var(--border-color){% endif %}; border-radius: var(--radius-md); padding: 12px 16px; min-width: 170px; box-shadow: var(--shadow-sm); position: relative;">
+            {% if loop.first %}
+              <div style="position: absolute; top: -10px; right: 10px; background: var(--color-primary); color: white; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: var(--radius-full);">
+                Next Up
+              </div>
+            {% endif %}
+            <div style="font-size: 11px; font-weight: 700; color: var(--color-primary); text-transform: uppercase;">
+              Position #{{ item.queue_position }}
+            </div>
+            <div style="font-weight: 600; color: var(--text-main); font-size: 13.5px; margin-top: 2px;">
+              {{ item.student_name }}
+            </div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+              {{ item.student_number }}
+            </div>
+            <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 4px;">
+              {{ item.reservation_date }}
+            </div>
+          </div>
+
+          {% if not loop.last %}
+            <div style="color: var(--color-primary); font-size: 18px; font-weight: 700;">&rarr;</div>
+          {% endif %}
+        </div>
+        {% endfor %}
+
+        <div style="padding: 6px 12px; background: var(--color-primary-soft); color: var(--color-primary); border-radius: var(--radius-sm); font-size: 11px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">
+          REAR / TAIL
+        </div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="card" style="padding: 36px; text-align: center; color: var(--text-muted);">
+    <p>No active reservations queued. All catalog titles are available or have no waiting students.</p>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- All Reservations Comprehensive Table -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+      </svg>
+      <span>Full Waiting List Registry</span>
+    </div>
+  </div>
+  <div class="card-body" style="padding: 0;">
+    <div class="table-container" style="border: none; border-radius: 0;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Queue Pos</th>
+            <th>Book Title</th>
+            <th>Student Name</th>
+            <th>Student ID</th>
+            <th>Request Timestamp</th>
+            <th>Status</th>
+            <th style="text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in all_reservations %}
+          <tr>
+            <td><strong style="color:var(--color-primary); font-size:14px;">#{{ r.queue_position }}</strong></td>
+            <td>
+              <div style="font-weight: 600;">{{ r.book_title }}</div>
+              <small class="code-pill">{{ r.isbn }}</small>
+            </td>
+            <td>{{ r.student_name }}</td>
+            <td><code>{{ r.student_number }}</code></td>
+            <td>{{ r.reservation_date }}</td>
+            <td><span class="badge badge-warning">Waiting in Queue</span></td>
+            <td style="text-align: right;">
+              <form method="POST" action="{{ url_for('reservations.cancel_reservation', reservation_id=r.reservation_id) }}" style="display:inline-block;" onsubmit="return confirm('Cancel this reservation?');">
+                <button type="submit" class="btn btn-outline btn-sm" style="color:var(--color-danger); border-color:#fecaca;">
+                  Cancel
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 36px;">No reservations found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Enqueue Modal -->
+<div class="modal-overlay" id="enqueueModal">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <div class="modal-title">Enqueue Student for Book Reservation</div>
+      <button type="button" class="modal-close" data-modal-close>&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('reservations.enqueue_reservation') }}">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Select Book *</label>
+          <select name="book_id" class="form-control" required>
+            <option value="">-- Choose Book --</option>
+            {% for b in books %}
+              <option value="{{ b.book_id }}">{{ b.title }} ({{ b.available_copies }} in stock, ISBN: {{ b.isbn }})</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Select Student *</label>
+          <select name="student_id" class="form-control" required>
+            <option value="">-- Choose Student --</option>
+            {% for s in students %}
+              <option value="{{ s.student_id }}">{{ s.full_name }} ({{ s.student_number }})</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-primary">Enqueue (FIFO Tail)</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

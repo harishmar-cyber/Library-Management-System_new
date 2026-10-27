@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Library Management System{% endblock %} | DSA Edition</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="appSidebar">
+      <div class="sidebar-header">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>Lavender LMS</h1>
+          <span>DSA Powered Core</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">Core Management</div>
+        <a href="{{ url_for('dashboard.index') }}" class="nav-link {% if active_page == 'dashboard' %}active{% endif %}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="9"></rect>
+            <rect x="14" y="3" width="7" height="5"></rect>
+            <rect x="14" y="12" width="7" height="9"></rect>
+            <rect x="3" y="16" width="7" height="5"></rect>
+          </svg>
+          <span>Dashboard</span>
+        </a>
+
+        <a href="{{ url_for('books.index') }}" class="nav-link {% if active_page == 'books' %}active{% endif %}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+          </svg>
+          <span>Books Management</span>
+        </a>
+
+        <a href="{{ url_for('students.index') }}" class="nav-link {% if active_page == 'students' %}active{% endif %}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          <span>Student Directory</span>
+        </a>
+
+        <a href="{{ url_for('issues.index') }}" class="nav-link {% if active_page == 'issues' %}active{% endif %}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 11 12 14 22 4"></polyline>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+          </svg>
+          <span>Issue & Return</span>
+        </a>
+
+        <div class="nav-section-title">DSA Implementations</div>
+        <a href="{{ url_for('reservations.index') }}" class="nav-link {% if active_page == 'reservations' %}active{% endif %}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="8" y1="6" x2="21" y2="6"></line>
+            <line x1="8" y1="12" x2="21" y2="12"></line>
+            <line x1="8" y1="18" x2="21" y2="18"></line>
+            <line x1="3" y1="6" x2="3.01" y2="6"></line>
+            <line x1="3" y1="12" x2="3.01" y2="12"></line>
+            <line x1="3" y1="18" x2="3.01" y2="18"></line>
+          </svg>
+          <span>Reservation Queue</span>
+          <span class="nav-badge">FIFO</span>
+        </a>
+
+        <a href="{{ url_for('recommendations.index') }}" class="nav-link {% if active_page == 'recommendations' %}active{% endif %}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="18" cy="5" r="3"></circle>
+            <circle cx="6" cy="12" r="3"></circle>
+            <circle cx="18" cy="19" r="3"></circle>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+          </svg>
+          <span>Recommendation Graph</span>
+          <span class="nav-badge">BFS/DFS</span>
+        </a>
+
+        <a href="{{ url_for('dsa_lab.index') }}" class="nav-link {% if active_page == 'dsa_lab' %}active{% endif %}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 2v7.31"></path>
+            <path d="M14 9.3V2"></path>
+            <path d="M8.5 2h7"></path>
+            <path d="M14 9.3a6.5 6.5 0 1 1-4 0"></path>
+            <path d="M5.52 16h12.96"></path>
+          </svg>
+          <span>DSA Interactive Lab</span>
+          <span class="nav-badge" style="background:#e0d6fa; color:#5c3b9e;">Live</span>
+        </a>
+
+        <div class="nav-section-title">Audit & Control</div>
+        <a href="{{ url_for('reports.index') }}" class="nav-link {% if active_page == 'reports' %}active{% endif %}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+          <span>Reports & History</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-profile">
+          <div class="user-avatar">{{ session.get('user_name', 'Admin')[0]|upper }}</div>
+          <div class="user-info">
+            <span class="user-name">{{ session.get('user_name', 'Librarian') }}</span>
+            <span class="user-role">{{ session.get('role', 'Administrator')|capitalize }}</span>
+          </div>
+        </div>
+        <a href="{{ url_for('auth.logout') }}" title="Logout" style="color:var(--text-muted); padding:6px; border-radius:var(--radius-xs);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-wrapper">
+      <header class="topbar">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <button type="button" class="btn btn-outline btn-icon menu-toggle-btn" id="mobileMenuToggle">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          <div class="page-header-info">
+            <h2>{% block page_title %}Dashboard{% endblock %}</h2>
+            <p>{% block page_subtitle %}Data Structures & Algorithms Library Management Platform{% endblock %}</p>
+          </div>
+        </div>
+
+        <div class="topbar-actions">
+          <!-- Stack Undo Quick Trigger Button -->
+          <button type="button" class="btn btn-secondary btn-sm" id="btnQuickUndo" title="Undo last librarian action using Stack (LIFO)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="1 4 1 10 7 10"></polyline>
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+            </svg>
+            <span>Undo Action</span>
+            <span class="dsa-badge" style="padding:1px 6px; font-size:10px;">LIFO</span>
+          </button>
+          
+          <a href="{{ url_for('books.index') }}" class="btn btn-primary btn-sm">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>Add Book</span>
+          </a>
+        </div>
+      </header>
+
+      <main class="content-body">
+        <!-- Flash Alert Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px;">
+              {% for category, message in messages %}
+                <div class="flash-alert card" style="padding: 12px 18px; display:flex; align-items:center; gap:12px; border-left: 4px solid {% if category == 'success' %}var(--color-success){% elif category == 'danger' or category == 'error' %}var(--color-danger){% elif category == 'warning' %}var(--color-warning){% else %}var(--color-primary){% endif %};">
+                  <span style="font-weight: 500;">{{ message }}</span>
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  <script>
+    // Quick undo button handler
+    document.getElementById('btnQuickUndo')?.addEventListener('click', async () => {
+      if (!confirm('Undo the last librarian action recorded on the Stack?')) return;
+      try {
+        const res = await apiRequest('/api/undo', 'POST');
+        if (res.success) {
+          showToast(res.message || 'Action undone successfully!', 'success');
+          setTimeout(() => window.location.reload(), 900);
+        } else {
+          showToast(res.message || 'No actions available to undo.', 'warning');
+        }
+      } catch (e) {
+        showToast('Failed to perform undo operation.', 'error');
+      }
+    });
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

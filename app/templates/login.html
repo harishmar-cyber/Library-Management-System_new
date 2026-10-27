@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | Lavender Library Management System</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 10% 20%, #f1ecfa 0%, #f7f5fc 90%);
+      padding: 20px;
+    }
+
+    .login-container {
+      max-width: 440px;
+      width: 100%;
+      background: var(--bg-surface);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-xl);
+      padding: 40px 36px;
+      animation: modalSlideIn 0.35s ease;
+    }
+
+    .login-brand {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .login-logo {
+      width: 60px;
+      height: 60px;
+      border-radius: var(--radius-lg);
+      background: var(--color-accent-gradient);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      box-shadow: 0 8px 18px var(--color-primary-glow);
+      margin-bottom: 16px;
+    }
+
+    .login-brand h1 {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.4px;
+    }
+
+    .login-brand p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .credentials-hint {
+      background: var(--color-primary-soft);
+      border: 1px dashed var(--color-primary-border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      margin-top: 24px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      text-align: center;
+    }
+
+    .credentials-hint strong {
+      color: var(--color-primary);
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-brand">
+      <div class="login-logo">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+        </svg>
+      </div>
+      <h1>Lavender LMS</h1>
+      <p>Data Structures & Algorithms Management Portal</p>
+    </div>
+
+    <!-- Flash Alerts -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div style="margin-bottom: 20px;">
+          {% for category, message in messages %}
+            <div class="flash-alert" style="padding: 10px 14px; border-radius: var(--radius-sm); font-size: 13px; background: {% if category == 'danger' %}var(--color-danger-bg){% elif category == 'success' %}var(--color-success-bg){% else %}var(--color-primary-soft){% endif %}; color: {% if category == 'danger' %}var(--color-danger){% elif category == 'success' %}var(--color-success){% else %}var(--color-primary){% endif %}; border: 1px solid currentColor; margin-bottom: 8px;">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('auth.login') }}">
+      <div class="form-group">
+        <label class="form-label" for="username">Username</label>
+        <input type="text" id="username" name="username" class="form-control" placeholder="Enter username (e.g. admin)" required autofocus value="admin">
+      </div>
+
+      <div class="form-group" style="margin-bottom: 24px;">
+        <label class="form-label" for="password">Password</label>
+        <input type="password" id="password" name="password" class="form-control" placeholder="Enter password" required value="admin123">
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 14.5px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+          <polyline points="10 17 15 12 10 7"></polyline>
+          <line x1="15" y1="12" x2="3" y2="12"></line>
+        </svg>
+        <span>Sign In to Dashboard</span>
+      </button>
+    </form>
+
+    <div class="credentials-hint">
+      Default Access: <strong>admin</strong> &bull; Password: <strong>admin123</strong>
+    </div>
+  </div>
+</body>
+</html>
